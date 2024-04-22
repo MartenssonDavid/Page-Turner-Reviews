@@ -14,33 +14,33 @@
 <?php include "includes/nav.php" ?>
 
 
-    <div class="container mt-3">
-      <form action="includes/registerFunction.php" method="post">
-        
+    <div class="container mt-3 bg-warning">
+      <form action="includes/updateDetailsFunction.php" method="post">
+      <input type="hidden" class="form-control" id="user_id_favorite" name="user_id" value="<?php echo $_SESSION['user_id']; ?>">
         <!-- Username Input -->
         <div class="form-group">
-            <label for="RegisterUserNameInput"> Username </label>
-            <input type="username" class="form-control" id="RegisterUserNameInput" name="username" placeholder="username">
+            <label for="UpdateUserNameInput"> Username </label>
+            <input type="username" class="form-control" id="UpdateUserNameInput" name="username" placeholder="username">
         </div>
 
         <!-- Email Input -->
         <div class="form-group">
-            <label for="RegisterEmailInput">Email adress</label>
-            <input type="email" class="form-control" id="RegisterEmailInput" name="email" placeholder="name@email.com">
+            <label for="UpdateEmailInput">Email adress</label>
+            <input type="email" class="form-control" id="UpdateEmailInput" name="email" placeholder="name@email.com">
         </div>
 
         <!-- Password Input -->
         <div class="form-group">
-            <label for="RegisterPasswordInput">Password</label>
-            <input type="password" class="form-control" id="RegisterPasswordInput" name="password" placeholder="Password123">
+            <label for="UpdatePasswordInput">Password</label>
+            <input type="password" class="form-control" id="UpdatePasswordInput" name="password" placeholder="Password123">
         </div>
         <div class="form-group">
-            <label for="RegisterPasswordInputVerify">Password</label>
-            <input type="password" class="form-control" id="RegisterPasswordInputVerify" name="passwordVerify" placeholder="Password123">
+            <label for="UpdatePasswordInputVerify">Password</label>
+            <input type="password" class="form-control" id="UpdatePasswordInputVerify" name="passwordVerify" placeholder="Password123">
         </div>
         <div class="container d-flex justify-content-center align-items-center">
             <!--Create buttons in middle, ontop of eachother, sign in and --> 
-            <button type="submit" name="submit">Register</button>
+            <button type="submit" name="submit">Update</button>
         </div>
       </form>
 

@@ -38,7 +38,7 @@
         }
         return $books;
     }
-
+    
     // Books to fetch reviews 
     function getReviews($book_id){
         $conn = dbconnect();
@@ -72,9 +72,9 @@
 
     // Function to sort by categories
     function getByCategory($category){
-        $mysqli = dbconnect();
+        $conn = dbconnect();
 
-        $stmt = $mysqli->prepare("SELECT book_name, author, description, picture FROM books WHERE category = ?");
+        $stmt = $conn->prepare("SELECT book_name, author, description, picture FROM books WHERE category = ?");
         $stmt->bind_param("s", $category);
         $stmt->execute();
         $results = $stmt->get_result();
@@ -84,16 +84,16 @@
     }
     // Function to get detailed view 
     function getDetailedView($bookName){
-        $mysqli = dbconnect();
+        $conn = dbconnect();
         // Getting data from title pressed
-        $stmt = $mysqli->prepare("SELECT * FROM books WHERE book_name = ?");
+        $stmt = $conn->prepare("SELECT * FROM books WHERE book_name = ?");
         $stmt->bind_param("s", $bookName);
         $stmt->execute();
         $bookResults = $stmt->get_result();
         $bookData = $bookResults->fetch_all(MYSQLI_ASSOC);
 
         // Get reviews as well
-        $stmt = $mysqli->prepare("SELECT rating, comments, date, username FROM reviews 
+        $stmt = $conn->prepare("SELECT rating, comments, date, username FROM reviews 
         LEFT JOIN user ON user.user_id = reviews.user_id 
         WHERE reviews.book_id = ?");
         // Get book id from first array
@@ -112,27 +112,22 @@
     // Function to register user 
     function register($username,$email,$password){
         $conn = dbconnect();
-        $sql = "INSERT INTO user(userName, email, password) VALUES (?,?,?)";
-        
-        $stmt = mysqli_stmt_init($conn);
-        if(!mysqli_stmt_prepare($stmt,$sql)){
-            // If not working
-            header("location: ../register.php?error=stmtNotWorking");
-            // Stop code from running completly
-            exit();           
-        }
-
+        $stmt = $conn->prepare("INSERT INTO user(userName, email, password) VALUES (?,?,?)");
         // Hash password and set as new vairable
         $hashPassword = password_hash($password, PASSWORD_DEFAULT);
-
-        // If no error bind parameters and execute statement then close
-        mysqli_stmt_bind_param($stmt, "sss",$username,$email,$hashPassword);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
-
+        $stmt->bind_param("sss",$username,$email,$hashPassword);
+        $stmt->execute();
+        $stmt->close();
         // Send user back to homepage
         header("location: ../index.php");
-        exit();
+    }
+    // Function to post review
+    function postReview($user_id,$book_id,$rating,$review){
+        $conn = dbconnect();
+        $stmt =$conn->prepare("INSERT INTO reviews(user_id,book_id,rating,comments) VALUES (?,?,?,?)");
+        $stmt->bind_param("iiis",$user_id,$book_id,$rating,$review);
+        $stmt->execute();
+        $stmt->close();
     }
     // Function to check if input fields are empty
     function inputEmpty($username,$email,$password,$passwordVerify){
@@ -168,37 +163,39 @@
     function takenNameEmail($username,$email){
         $conn = dbconnect();
         // Select all
-        $sql = "SELECT * FROM user WHERE username = ? OR email=?;";
-
-        $stmt = mysqli_stmt_init($conn);
-        if(!mysqli_stmt_prepare($stmt,$sql)){
-            // If not working
-            header("location: ../register.php?error=stmtNotWorking");
-            // Stop code from running completly
-            exit();           
-        }
-        // If no error bind parameters and execute statement
-        mysqli_stmt_bind_param($stmt, "ss",$username,$email);
-        mysqli_stmt_execute($stmt);
-        // Get resulting data
-        $resultData = mysqli_stmt_get_result($stmt);
-
-        // If data found, place in variable, used for login as well
-        if($row = mysqli_fetch_assoc($resultData)){
+        $stmt =$conn->prepare("SELECT * FROM user WHERE username = ? OR email=?;");
+        $stmt->bind_param("ss",$username,$email);
+        $stmt->execute();
+        $results = $stmt->get_result();
+        if($row=$results->fetch_assoc()){
             return $row;
-
-        }
-        else{
+        }else{
             $result = false;
             return $result;
         }
-        mysqli_stmt_close($stmt);
+        $stmt->close();
+    }
+    // Check if username exists
+    function usernameExists($username){
+        $conn = dbconnect();
+        // Select all
+        $stmt =$conn->prepare("SELECT * FROM user WHERE username = ?;");
+        $stmt->bind_param("s",$username);
+        $stmt->execute();
+        $results = $stmt->get_result();
+        if($row=$results->fetch_assoc()){
+            return $row;
+        }else{
+            $result = false;
+            return $result;
+        }
+        $stmt->close();
     }
     // Function to log in
     function login($username,$password){
         // Connection handeled in function call below
         // Since query is run to check if email is taken
-        $username = takenNameEmail($username,$email);
+        $username = usernameExists($username);
         // If username does not exist
         if($username === false){
             // Return to homepage
@@ -219,9 +216,8 @@
             exit();
         }
         else if($verifyPassword === true){
-            // Login user and start session
-            session_start();
             // Set global variable primary key, get from used function
+            session_start();
             $_SESSION['user_id'] = $username['user_id'];
             // Send back to homepage
             header("location: ../index.php");
@@ -238,11 +234,93 @@
         if(empty($username) || empty($password)){
             // Set result true
             $result = true;
-
         }
         else{
             $result = false;
         }
         return $result;
     }
+    // Function for searching books, try to make prepared if possible
+    function searchBooks($input){
+        $conn = dbconnect();
+        // Query
+        $stmt = $conn->prepare("SELECT book_name, picture FROM books WHERE book_name LIKE '%{$input}%'");
+        $stmt->execute();
+        $results = $stmt->get_result();
+        // Array to store data
+        $searchBooks = array();
+        // Data from rows into accociative array
+        while($row = $results->fetch_assoc()){
+            // Put data of row array into new
+            $searchBooks[] = $row;
+        }
+        return $searchBooks;          
+    }
+    // Add book to favorites
+    function addFavorite($book_id, $user_id){
+        $conn = dbconnect();
+        $stmt =$conn->prepare("INSERT INTO favorites(book_id,user_id) VALUES (?,?)");
+        $stmt->bind_param("ii",$book_id, $user_id);
+        $stmt->execute();
+        $stmt->close();
+
+    }
+    // Get favorites by userid
+    function getFavoritesByID($user_id){
+        $conn = dbconnect();
+        // Get bookId for the user in favorites
+        $stmt = $conn->prepare("SELECT books.book_name,books.picture FROM favorites INNER JOIN books ON favorites.book_id = books.book_id WHERE  favorites.user_id= ?");
+        $stmt->bind_param("i" ,$user_id);
+        $stmt->execute();
+        $results = $stmt->get_result();
+        $favoriteBooks = array();
+        while($row = $results->fetch_assoc()){
+            $favoriteBooks[] = $row;
+        }
+        return $favoriteBooks;
+        
+    }
+
+    function getReviewsById($user_id){
+        $conn = dbconnect();
+        $stmt = $conn->prepare("SELECT rating, comments, date, username FROM reviews 
+        LEFT JOIN user ON user.user_id = reviews.user_id 
+        WHERE reviews.user_id = ?");
+        $stmt->bind_param("i",$user_id);
+        $stmt->execute();
+        $results = $stmt->get_result();
+        $reviews = array();
+        while($row = $results->fetch_assoc()){
+            $reviews[] = $row;
+        }
+        return $reviews;
+    }
+    // Update account details
+    function updateAccountDetails($user_id,$email, $username,  $password){
+        $conn = dbconnect();
+        $stmt = $conn->prepare("UPDATE user SET email=? ,username=?,password=? WHERE user_id = ?");
+        $hashPassword = password_hash($password, PASSWORD_DEFAULT);
+        $stmt->bind_param("sssi",$email,$username,$hashPassword,$user_id);
+        $stmt->execute();
+        $stmt->close();
+        header("location: ../index.php");
+        
+        
+    }
+    // Get top five rated by review rating average
+    function topRated(){
+
+        $conn = dbconnect();
+        $stmt = $conn->prepare("SELECT books.book_name,books.picture, AVG(reviews.rating) AS average_rating FROM books books LEFT JOIN reviews reviews ON 
+        books.book_id = reviews.book_id GROUP BY books.book_id
+        ORDER BY average_rating DESC LIMIT 5");
+        $stmt->execute();
+        $topResults = $stmt->get_result();
+        $topBooks = $topResults->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        return $topBooks;
+
+
+    }
+
 ?>

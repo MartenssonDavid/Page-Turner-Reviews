@@ -15,6 +15,4 @@
         return $conn; // Return connection object
 
     }
-
-     
     ?>

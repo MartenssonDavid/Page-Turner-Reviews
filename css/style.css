@@ -2,11 +2,33 @@
 
   #menu{
     text-align: center;
+    
     max-width: 100px !important;
 
 }
 
  #cover{
   width: 100% !important;
-  height: 480 !important;
+  height: 480px !important;
  }
+ 
+.heart {
+  border: none;
+  color: grey;
+  margin-top: 5px;
+  
+}
+.heart i{
+  font-size:25px;
+  border: none;
+
+}
+a {
+  text-decoration: none;
+  color: black;
+}
+
+body{
+  background-color:#ffcc66 !important;
+  
+}
